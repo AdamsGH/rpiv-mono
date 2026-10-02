@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **A budget-exhausted gate halt no longer tells the user to resume.** `FAIL_GATE_STOP` previously printed "fix and resume with `/wf @<runId>`" for every gate stop. That is correct for a `match`-no-fallback stop (resume re-grades the repaired tree and routes onward), but wrong for a meta unit-graph exhaustion halt: the round/generation counters are derived from the persisted trail and nothing in the resume path resets them, so `/wf @<id>` re-reads the spent budget and re-decides the identical stop — an observed "cannot restart" dead end. `FAIL_GATE_STOP` now recognizes the exhaustion vocabulary (`N/M rounds spent`, `the same failures survived a correction`, `<unit> FATAL — …`, `integrity stop`) and, for those, points at a fresh run instead of resume and drops the "matched no branch" phrasing (wrong for a halt that routed to `stop` deliberately). `match`-no-fallback stops keep the resume remedy unchanged.
+
 ## [2.12.0] - 2026-09-30
 
 ### Fixed
