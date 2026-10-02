@@ -34,11 +34,11 @@ You are one skeptic on a panel. You judge **one** target through **one** lens an
      - `high`: the target is broken as written.
      - `medium`: a real defect the rubric names.
      - `low`: a nit or a style issue. `low` never blocks.
-4. Write the verdict, then print its path on the last line of your reply.
+4. Write the verdict with the Write tool; end your reply with `<lens>: PASS` or `<lens>: FAIL (<severity>)` — not the path, which the panel reads from disk.
 
 ## Verdict
 
-Write `<out>/<unit>__<lens>__r<round>g<generation>__<unix-ms>.json`:
+Write `<out>/<unit>__<lens>__r<round>g<generation>.json` — the four identity flags verbatim, no timestamp.
 
 ```json
 {

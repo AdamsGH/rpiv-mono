@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - **`validate` no longer fails the verdict on a comment-only gap**, matching `grade`'s comment-only rule. A Deviation or Potential Issue whose only remedy is comment/doc text — even when the text is wrong — changes no executable line and breaks no downstream stage, so it is reported but neither leaves a phase incomplete for `verdict: pass` nor forces `verdict: fail`. Removes the failure mode where such a gap forced `fail`, which the validate gate (acting only on `pass: false` risk rulings and `blockers`) could not remediate — halting the run with a verified implementation stranded.
+- **`lens-grade` say-do verdict path.** The skill no longer embeds a `__<unix-ms>` timestamp in the verdict filename, nor asks the grader to print the path on its last line. The name is now fully determined by the `--unit`/`--lens`/`--round`/`--generation` identity flags (`<unit>__<lens>__r<round>g<generation>.json`), and the reply ends with a plain `<lens>: PASS|FAIL` line. Removes the failure mode where the announced path diverged from the written one (the agent re-typing the volatile timestamp instead of copying it — observed as a fabricated, stale value). Round-distinctness is preserved by `r<round>g<generation>`; disk-first `verdictCollector` and `--prior` wiring are unaffected (both key off the captured artifact handle, not the filename format). `grade` (build pipeline) is independent and unchanged.
 
 ## [2.12.0] - 2026-09-30
 
