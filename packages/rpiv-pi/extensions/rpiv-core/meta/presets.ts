@@ -69,6 +69,14 @@ const plan: UnitSpec = {
 		},
 	],
 	maxRounds: 3,
+	// When the surgical plan-fix loop can't converge in 3 rounds, escalate to
+	// acceptance (its immediate upstream) rather than halt terminally: that opens
+	// a fresh generation, so plan re-plans from scratch (a clean quick-plan, not
+	// another surgical patch of a plan that kept whack-a-moling defects) against
+	// an acceptance inventory the escalation lets acceptance revise. Mirrors
+	// implement→plan; bounded by the runner's absolute lap ceiling, which halts
+	// the run if escalation also fails to converge.
+	onExhausted: { escalateTo: "acceptance" },
 };
 
 const implement: UnitSpec = {
@@ -95,7 +103,7 @@ const implement: UnitSpec = {
 export const metaWorkflow = defineUnitGraph({
 	name: "meta",
 	description:
-		"Graph of self-correcting units: research → acceptance → plan → implement → commit. Each unit loops produce → deterministic checks → parallel lens graders → scoped correction (max 3 rounds; identical failures twice stop early); an exhausted implement escalates to plan. No confirm/demote passes, no slicing; accepted runs feed their corrected failures forward as standing constraints (.rpiv/lessons). The A/B challenger to build.",
+		"Graph of self-correcting units: research → acceptance → plan → implement → commit. Each unit loops produce → deterministic checks → parallel lens graders → scoped correction (max 3 rounds; identical failures twice stop early); an exhausted plan escalates to acceptance and an exhausted implement escalates to plan — each opening a fresh generation rather than halting. No confirm/demote passes, no slicing; accepted runs feed their corrected failures forward as standing constraints (.rpiv/lessons). The A/B challenger to build.",
 	units: [
 		["research", research],
 		["acceptance", acceptance],

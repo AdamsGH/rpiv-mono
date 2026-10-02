@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`meta`: an exhausted `plan` unit now escalates to `acceptance` instead of halting.** Previously `plan` had no `onExhausted`, so three red correction rounds ended the run terminally — and because the round/generation counters are derived from the trail, `/wf @<id>` could not revive it (it re-decided the same stop). `plan` now carries `onExhausted: { escalateTo: "acceptance" }`, mirroring `implement → plan`: exhaustion opens a fresh generation, so `plan` re-plans from scratch (a clean `quick-plan`, not another surgical patch of a plan that kept introducing new defects) against an acceptance inventory the escalation lets `acceptance` revise. Bounded by the runner's absolute lap ceiling, which still halts a run where escalation also fails to converge.
+
 ## [2.12.0] - 2026-09-30
 
 ### Added
