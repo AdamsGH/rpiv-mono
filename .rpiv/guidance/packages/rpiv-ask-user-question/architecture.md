@@ -54,7 +54,7 @@ locales/                — JSON translation maps loaded via i18n-bridge at modu
 
 ## Preview Pane
 
-`PreviewPane` is a thin composer over a per-question width-keyed markdown cache, a pure layout decider (side-by-side vs stacked + column widths), a pure bordered-box renderer, and the options selector. Layout mode is decided once and threaded through height + render — no width-derived re-derivation.
+`PreviewPane` is a thin composer over a per-question width-keyed markdown cache, a pure layout decider (side-by-side vs stacked + column widths), a pure bordered-box renderer, and the options selector. Layout mode is decided once and threaded through height + render — no width-derived re-derivation. Under a row allowance from `DialogView` (`setRowAllowance`, render-time geometry, not a prop) the pane fits itself: the options column is windowed around the focused option via the shared `view/scroll-window.ts` helpers, and the preview block shrinks through `fitBlock` (affordance dropped first, box always closed with its hidden-line count; stacked keeps the focused option + its preview in view) — #210.
 
 ## Collapse Mode
 
