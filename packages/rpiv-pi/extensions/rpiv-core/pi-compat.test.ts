@@ -18,7 +18,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as piSdk from "@earendil-works/pi-coding-agent";
 import {
-	AuthStorage,
 	createAgentSession,
 	DefaultResourceLoader,
 	type ModelRegistry,
@@ -92,7 +91,8 @@ const EXT_PROVIDER_CONFIG = {
 	],
 };
 
-/** Host ≥ 0.80.8 exports ModelRuntime; the repo's pinned types may predate it. */
+/** Host ≥ 0.80.8 exports ModelRuntime; ≤ 0.80.7 exports AuthStorage instead. Both are read
+ *  untyped so this file compiles against either generation of the SDK's types. */
 type RuntimeLike = {
 	setRuntimeApiKey(provider: string, key: string): Promise<void>;
 	registerProvider(name: string, config: unknown): void;
@@ -100,9 +100,12 @@ type RuntimeLike = {
 const ModelRuntimeCtor = (piSdk as Record<string, unknown>).ModelRuntime as
 	| { create(opts: { authPath: string; modelsPath: string }): Promise<RuntimeLike> }
 	| undefined;
+const AuthStorageCtor = (piSdk as Record<string, unknown>).AuthStorage as {
+	create(authPath: string): { setRuntimeApiKey(provider: string, key: string): void };
+};
 const ModelRegistryCtor = piSdk.ModelRegistry as unknown as {
 	new (runtime: RuntimeLike): ModelRegistry;
-	create(auth: AuthStorage, modelsPath: string): ModelRegistry;
+	create(auth: unknown, modelsPath: string): ModelRegistry;
 };
 
 /**
@@ -120,7 +123,7 @@ async function createLauncherRegistry(agentDir: string): Promise<ModelRegistry> 
 		runtime.registerProvider(EXT_PROVIDER, EXT_PROVIDER_CONFIG);
 		return new ModelRegistryCtor(runtime);
 	}
-	const auth = AuthStorage.create(authPath);
+	const auth = AuthStorageCtor.create(authPath);
 	auth.setRuntimeApiKey("anthropic", RUNTIME_KEY);
 	const registry = ModelRegistryCtor.create(auth, modelsPath);
 	registry.registerProvider(EXT_PROVIDER, EXT_PROVIDER_CONFIG as never);

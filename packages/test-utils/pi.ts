@@ -2,7 +2,7 @@ import type { Api, Model } from "@earendil-works/pi-ai";
 import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
-	ExtensionContext,
+	ExtensionToolContext,
 	ExtensionUIContext,
 	RegisteredCommand,
 	SessionEntry,
@@ -217,7 +217,8 @@ export interface MockCtxOptions {
 	childSessionId?: string;
 }
 
-export function createMockCtx(opts: MockCtxOptions = {}): ExtensionContext {
+/** A tool `execute()` ctx (Pi ≥ 1.1: `ExtensionToolContext`), which also satisfies `ExtensionContext`. */
+export function createMockCtx(opts: MockCtxOptions = {}): ExtensionToolContext {
 	return {
 		hasUI: opts.hasUI ?? false,
 		mode: opts.mode,
@@ -227,7 +228,9 @@ export function createMockCtx(opts: MockCtxOptions = {}): ExtensionContext {
 		sessionManager: createMockSessionManager(opts.branch ?? [], opts.sessionId),
 		modelRegistry: createMockModelRegistry(opts.models ?? []),
 		isIdle: vi.fn(() => true),
-	} as unknown as ExtensionContext;
+		tools: [],
+		executeTool: vi.fn(),
+	} as unknown as ExtensionToolContext;
 }
 
 /**

@@ -22,14 +22,15 @@
  * to migrate.
  */
 
-import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
+import type { CreateAgentSessionOptions, ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 
 /**
- * The model-service option(s) a child's `createAgentSession` call receives —
- * exactly one of the two, chosen by host version. `modelRuntime` is typed
- * `object` because the repo's pinned SDK (≤ 0.80.7 types) has no `ModelRuntime`.
+ * The model-service option a child's `createAgentSession` call receives, typed
+ * against the repo's pinned (current) SDK: `modelRuntime`. On a legacy host the
+ * same slot carries `modelRegistry` instead — an option the current types no
+ * longer declare, hence the cast in `childModelServices`.
  */
-export type ChildModelServices = { modelRuntime: object } | { modelRegistry: ModelRegistry };
+export type ChildModelServices = Pick<CreateAgentSessionOptions, "modelRuntime">;
 
 /**
  * The launcher's canonical `ModelRuntime` behind the extension `ModelRegistry`
@@ -37,12 +38,14 @@ export type ChildModelServices = { modelRuntime: object } | { modelRegistry: Mod
  * `streamSimple` method `createAgentSession` drives every request through.
  * Fail-soft: a malformed/private host shape reads as "no runtime".
  */
-export function getRegistryRuntime(modelRegistry: unknown): object | undefined {
+export function getRegistryRuntime(modelRegistry: unknown): ModelRuntime | undefined {
 	try {
 		if (modelRegistry === null || typeof modelRegistry !== "object") return undefined;
 		const runtime = (modelRegistry as { runtime?: unknown }).runtime;
 		if (runtime === null || typeof runtime !== "object") return undefined;
-		return typeof (runtime as { streamSimple?: unknown }).streamSimple === "function" ? runtime : undefined;
+		return typeof (runtime as { streamSimple?: unknown }).streamSimple === "function"
+			? (runtime as ModelRuntime)
+			: undefined;
 	} catch {
 		return undefined;
 	}
@@ -51,5 +54,6 @@ export function getRegistryRuntime(modelRegistry: unknown): object | undefined {
 /** Share the launcher's model services with a child: its runtime on Pi ≥ 0.80.8, its registry before. */
 export function childModelServices(modelRegistry: ModelRegistry): ChildModelServices {
 	const modelRuntime = getRegistryRuntime(modelRegistry);
-	return modelRuntime ? { modelRuntime } : { modelRegistry };
+	// Legacy (≤ 0.80.7) option, absent from the pinned SDK's types.
+	return modelRuntime ? { modelRuntime } : ({ modelRegistry } as unknown as ChildModelServices);
 }
