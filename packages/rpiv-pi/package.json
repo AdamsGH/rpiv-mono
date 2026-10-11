@@ -39,6 +39,7 @@
 		"README.md",
 		"LICENSE",
 		"!**/*.test.ts",
+		"!extensions/rpiv-core/workflow-test-harness.ts",
 		"!extensions/rpiv-core/built-ins/__fixtures__/"
 	],
 	"pi": {
