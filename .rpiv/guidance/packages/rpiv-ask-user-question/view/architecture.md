@@ -16,8 +16,10 @@ component-binding.ts      — globalBinding / perTabBinding factories → BoundG
 props-adapter.ts          — QuestionnairePropsAdapter (fan-out + invalidate())
 tab-components.ts         — TabComponents per-tab bundle record (incl. the `bodyHeights(width) → {current, max}` thunk feeding the dialog's height closures)
 tab-content-strategy.ts   — TabContentStrategy + QuestionTabStrategy / SubmitTabStrategy + OneLineClippedText
-dialog-builder.ts         — DialogView class + hint/heading constants + DialogProps/DialogConfig.
+dialog-builder.ts         — DialogView class + DialogProps/DialogConfig; re-exports the dialog copy by name.
                             Residual height-equalizer computed inline as `spacerRows` in `render()`.
+dialog-copy.ts            — Hint / heading / Submit-tab copy constants. A leaf: imports nothing from `view/`,
+                            so `dialog-builder` ↔ `tab-content-strategy` never form a runtime cycle (#208).
 components/               — Leaf renderers (see .rpiv/guidance/packages/rpiv-ask-user-question/view/components/architecture.md)
 ```
 
@@ -88,6 +90,7 @@ const spacerRows = Math.max(0,
 Absorbs footer-row-count asymmetry across tabs — total dialog height equals across Question and Submit tabs without inflating natural body height. Computed inline in `DialogView.render` (no separate component); under terminal overflow it is dropped in favour of the 3-region scroll partition. In that partition the heading rows (badge + question, measured in rendered rows) join the fixed top whenever at least `MIN_SCROLL_ROWS_WITH_PINNED_HEADING` (3) body rows remain, so the question never scrolls away; below that the heading scrolls with the body.
 
 ## Architectural Boundaries
+- **No runtime import cycles** — the package graph is async (top-level `await` in `i18n-bridge.ts`), and esbuild's ESM bundle turns any cycle of value imports into two initializers awaiting each other, so the questionnaire never mounts (#208; jiti masks it). Shared values go in a leaf module (e.g. `dialog-copy.ts`); a type-only import back is fine. `import-graph.test.ts` fails on any cycle and names it
 - **Only `PropsAdapter` calls `setProps`** — `DialogView` never writes sibling props; it only reads `liveProps`
 - **`DialogView.invalidate()` is a no-op** — cache busts go through the adapter's registry walk
 - **NO `string.length` width math** — chrome uses `Spacer(n)` + row-counted residual; body height via `render(w).length` or injected `getBodyHeight`/`getCurrentBodyHeight` thunks
