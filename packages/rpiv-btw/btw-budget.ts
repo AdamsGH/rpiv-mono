@@ -307,6 +307,16 @@ function truncateToFit(result: Message[], budget: number): boolean {
 					result[target.mi] = { ...msg, content };
 				}
 			}
+		} else if (msg.role === "system") {
+			// Pi ≥ 1.1 passes system messages through convertToLlm; content is a string or text parts.
+			if (typeof msg.content === "string") {
+				result[target.mi] = { ...msg, content: `${msg.content.slice(0, keepChars)}${marker}` };
+			} else {
+				const content = [...msg.content];
+				const part = content[target.ci];
+				content[target.ci] = { ...part, text: `${part.text.slice(0, keepChars)}${marker}` };
+				result[target.mi] = { ...msg, content };
+			}
 		} else if (msg.role === "assistant") {
 			const content = [...msg.content];
 			const part = content[target.ci];

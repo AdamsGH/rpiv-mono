@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Context truncation handles system messages on Pi 1.1.** Pi 1.1 added a `system` message role, and `convertToLlm` passes it through to `/btw`'s context. When the largest text block was a system message with string content, truncation split the string into characters, removed nothing and stopped while the request was still over budget. System messages now get their own truncation branch, for both string and text-part content.
+
 ## [2.13.4] - 2026-10-11
 
 ## [2.13.3] - 2026-10-11

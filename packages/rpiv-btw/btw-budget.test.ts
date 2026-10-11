@@ -615,6 +615,36 @@ describe("fitBranch — FR6 tool-result stubbing + terminal truncation", () => {
 		// Budget adherence: the truncated result actually fits the remaining budget.
 		expect(fit.messages.reduce((sum, m) => sum + estimateTokens(m), 0)).toBeLessThanOrEqual(fit.keepBudget);
 	});
+
+	it.each([
+		["string", "x".repeat(60000)],
+		["text-part", [{ type: "text" as const, text: "x".repeat(60000) }]],
+	])(
+		"terminal truncation rewrites a system message with %s content (Pi ≥ 1.1 passes them through)",
+		(_label, content) => {
+			// The largest block is a system message; before it had its own arm, its string content
+			// was spread into characters, nothing shrank, and truncation stopped over budget.
+			const entries = buildSessionEntries([makeUserMessage("y".repeat(60000))]);
+			const cached = [
+				{ role: "system", content, timestamp: 0 },
+				...branchToMessages(entries),
+			] as unknown as ReturnType<typeof branchToMessages>;
+			const model = makeModel({ contextWindow: 200000, maxTokens: 8192 });
+			const available = model.contextWindow - model.maxTokens - BTW_CONTEXT_RESERVE;
+			const fit = fitBranch({
+				entries,
+				messages: cached,
+				model,
+				systemPrompt: SYS,
+				question: Q,
+				admittedEstimate: available - 300,
+			});
+			expect(fit.stubbed).toBe(true);
+			expect(fit.messages[0].role).toBe("system");
+			expect(JSON.stringify(fit.messages[0])).toContain("characters truncated");
+			expect(fit.messages.reduce((sum, m) => sum + estimateTokens(m), 0)).toBeLessThanOrEqual(fit.keepBudget);
+		},
+	);
 });
 
 describe("fitBranch — keepBudget contract (Risk r1, for Phase 3)", () => {
