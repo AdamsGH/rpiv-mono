@@ -16,7 +16,7 @@ Single-tool extension exposing `ask_user_question` — a TUI option selector wit
 ## Module Structure
 
 ```
-.                       — Pi entry + tool registration, `config.ts` (collapseKey + optional `guidance` overrides for the tool description / prompt snippet / prompt guidelines, validated via rpiv-config's `validateGuidanceFields`; unset fields fall back to the `DEFAULT_*` consts in `ask-user-question.ts`), `events.ts` ("./events" export: the prompt event + the `rpiv:ask-user-question:blocked` `{active}` bracket), `rpc-fallback.ts` (RPC dialog walker), `reconcile.ts` (tool visibility)
+.                       — Pi entry + tool registration, `presentation.ts` (overlay vs inline mount, per-mode row budget, single inline-slot claim), `config.ts` (collapseKey, renderMode + optional `guidance` overrides for the tool description / prompt snippet / prompt guidelines, validated via rpiv-config's `validateGuidanceFields`; unset fields fall back to the `DEFAULT_*` consts in `ask-user-question.ts`), `events.ts` ("./events" export: the prompt event + the `rpiv:ask-user-question:blocked` `{active}` bracket), `rpc-fallback.ts` (RPC dialog walker), `reconcile.ts` (tool visibility)
 tool/                   — Tool I/O surface: TypeBox schemas, params line-terminator normalizer, params validator, result envelope, formatter.
                           Detailed: `.rpiv/guidance/packages/rpiv-ask-user-question/tool/architecture.md`
 state/                  — Canonical state, pure reducer, key router, runtime session, row-intent metadata,
@@ -59,6 +59,10 @@ locales/                — JSON translation maps loaded via i18n-bridge at modu
 ## Collapse Mode
 
 The shortcut is configurable via the `collapseKey` config field (default `ctrl+]`; `"off"` disables; malformed specs fall back to the default). It dispatches `toggle_collapsed` (intercepted at the top of `routeKey`, works from every inner state) → flips `state.collapsed` and emits a `set_overlay_hidden` effect, which the session routes to `OverlayHandle.setHidden` — the overlay is fully hidden (chat scrolling and editor focus resume; Esc does not cancel while hidden). Because pi-tui delivers no input to a hidden overlay, `execute()` registers a raw terminal listener for the same key to re-expand (`registerCollapseKeyListener`, `ask-user-question.ts:152-186`, registered `:363`) — it defers when another overlay is focused and consumes Kitty key-release/repeat events without toggling. The session honours `set_overlay_hidden` only when that listener was registered (`canReopenWhileHidden`, `:367`); on hosts without raw terminal input, collapse instead shrinks the overlay to a visible one-line row that keeps focus and input routing. Source: `state/state.ts:43`, `state/key-router.ts:36,305-314`, `state/state-reducer.ts:302-305`, `state/questionnaire-session.ts:195-202`.
+
+## Presentation (overlay vs inline)
+
+`renderMode` (`resolveRenderMode`, default `"overlay"`) picks the mount via `resolvePresentation` (`presentation.ts`). Overlay: focused bottom-anchored overlay, full terminal height, raw collapse listener. Inline: `ctx.ui.custom(..., { overlay: false })` mounts in Pi's editor slot, so fullscreen viewport input (PageUp/wheel) is no longer deferred to a focused overlay (#253); no `OverlayHandle`, no raw listener, collapse is the visible one-row fallback. Pi hands editor-slot components only a width and clips the slot from the bottom, so inline caps itself: `rowBudget` maps `tui.terminal.rows` → `min(rows, max(12, floor(rows*0.7)))`, applied inside the builder's `getTerminalRows` so `DialogView`'s overflow partition stays mode-agnostic. Pi runs tool calls in parallel and has one editor slot, so a module-level claim admits one inline questionnaire at a time; contenders degrade to the overlay (never wait — a lane's parked question could hold the slot). `execute()` releases the claim in its `finally`.
 
 ## Execution Modes & Load Resilience
 
