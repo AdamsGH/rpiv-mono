@@ -10,7 +10,7 @@ Pi runtime orchestrator and detached-execution launcher/observer host. Owns zero
 - **`@earendil-works/pi-coding-agent`**: `ExtensionAPI`, event-type guards, Pi SDK session machinery (`createAgentSession` — `sdk-workflow-host.ts` only). **`@earendil-works/pi-tui`**: static in the lane-*/picker UI modules. **`@earendil-works/pi-ai`** (peer): `Model` types + value imports (`getSupportedThinkingLevels` in `rpiv-models/items.ts`).
 - **`@juicesharp/rpiv-config`** (dependency): static value imports — `configPath` + `loadJsonConfigWithLegacyFallback` + `validateConfig` in `models-config.ts`; `parseModelKey` in `session-capture.ts` + `sdk-workflow-host.ts`; `loadJsonConfigWithLegacyFallback` + `modelKey` + `saveJsonConfig` in `rpiv-models/`.
 - **`typebox`** (`peerDependencies: "*"`, host-provided): `Type`/`Static` schema for `models.json` in `models-config.ts`. Pi supplies and aliases it at load time; never a `dependencies` entry (v2.12.0, #282).
-- **`@juicesharp/rpiv-workflow`** (peer): guarded dynamic `import(...)` of `/startup` in `register-built-in-workflows.ts`, `workflow-execution-host.ts`, `lane-progress.ts`, `outcome-derivation.ts` (itself reached dynamically from `skill-contracts-source.ts`, keeping artifact-collector's static edge off the entry graph), `skill-contracts-source.ts`; of `/registration` in `models-config-sources.ts`; of `/runner` in `lane-switcher.ts` (rerun-failed-run callback). Degrades silently when absent (isModuleNotFound guard). Off-entry-graph modules statically value-import the peer — `built-in-workflows.ts`, `artifact-collector.ts`, and the whole `built-ins/` cluster (`/registration` + `/runner`; see `.rpiv/guidance/packages/rpiv-pi/extensions/rpiv-core/built-ins/architecture.md`) — safe only because they are reached solely via those guarded dynamic imports; `skill-contracts-source.ts` sits on the entry graph and imports `/registration` types only.
+- **`@juicesharp/rpiv-workflow`** (peer): guarded dynamic `import(...)` of `/startup` in `register-built-in-workflows.ts`, `workflow-execution-host.ts`, `lane-progress.ts`, `outcome-derivation.ts` (itself reached dynamically from `skill-contracts-source.ts`, keeping artifact-collector's static edge off the entry graph), `skill-contracts-source.ts`; of `/registration` in `models-config-sources.ts`; of `/runner` in `lane-switcher.ts` (rerun-failed-run callback). Degrades silently when absent (isModuleNotFound guard). Off-entry-graph modules statically value-import the peer — `built-in-workflows.ts` (the composition barrel), its `workflows/*.ts` modules, `artifact-collector.ts`, and the whole `built-ins/` cluster (`/registration` + `/runner`; see `.rpiv/guidance/packages/rpiv-pi/extensions/rpiv-core/built-ins/architecture.md`) — safe only because they are reached solely via those guarded dynamic imports; `skill-contracts-source.ts` sits on the entry graph and imports `/registration` types only.
 - **`@juicesharp/rpiv-warp`** (opt-in — in neither `SIBLINGS` nor `peerDependencies`): guarded dynamic import in `workflow-question-warp-bridge.ts` for the per-run Blocked badge.
 - Node built-ins: `node:fs`, `node:path`, `node:url`, `node:os`, `node:child_process`.
 - External processes: `git` (via `pi.exec`), `pi` CLI (via `spawn` for the installer), `node` (the build workflow's code-splice stage shells out to `skills/_shared/stitch-elaborations.mjs` via `execFileSync`).
@@ -26,7 +26,7 @@ index.ts                — Composer; no inline handlers, but encodes ordering i
                           skill-bracket; rpiv-workflow-dependent registrars (register-built-in-workflows,
                           skill-contracts-source, registerUserSkillContractsSource) chained strictly in sequence
                           inside an async IIFE (jiti half-initialized-barrel race).
-session-hooks.ts        — Lifecycle wiring + guidance.ts / git-context.ts / agents.ts / pipeline-pointer.ts engines;
+session-hooks.ts        — Lifecycle wiring + guidance.ts / git-context.ts / agents-*.ts (barrel) / pipeline-pointer.ts engines;
                           compaction only marks the exact SessionManager and defers one merged context block to its
                           next before_agent_start (never sendMessage inside session_compact).
 sdk-workflow-host.ts    — Sole Pi-SDK importer: child AgentSession per stage/fanout unit, bounded parallel,
@@ -46,12 +46,25 @@ question-lifecycle.ts   — workflow-question lifecycle events from the registry
 *-command.ts / models-* / skill-* — Registrars: setup, update-agents, models-config(+validate,+sources),
                           models-picker, skill-bracket, skill-contracts-source (+outcome-derivation,
                           artifact-collector), register-built-in-workflows (+built-in-workflows).
-agent-enablement.ts     — Pure sibling-tool enablement map driving conditional frontmatter injection in agents.ts
-                          (currently empty).
+agent-enablement.ts     — Pure sibling-tool enablement map driving conditional frontmatter injection in
+                          agents-inject.ts (currently empty).
+agents-*.ts (family)    — Bundled-agent sync subsystem in five acyclic layers (each imports only layers
+                          above): agents-types.ts (SYNC_OP/CLEANUP_SKIP_REASON pairs, result shapes,
+                          summarizeCleanupSkips — zero imports), agents-allowlist.ts (isManagedAgentName /
+                          safeJoin path-traversal gate), agents-manifest.ts (sha256 manifest read/write,
+                          atomic tmp+rename — owns the inter-process race caveat), agents-inject.ts
+                          (injectModelFrontmatter pure transform), agents-sync.ts (syncBundledAgents /
+                          cleanupPerCwdAgents / isSafeDestructiveOp engine). agents.ts is the ~36-line
+                          public barrel: col-0 re-exports of exactly the pre-split 14-symbol surface,
+                          so ./agents.js consumers and their vi.mock sites stay byte-identical;
+                          internal layer symbols are not re-exported.
 rpiv-models/            — Nested subdir for the /rpiv-models cascade picker: command.ts, index.ts, items.ts,
                           overrides.ts (+ units tests).
 built-ins/              — Extracted built-in-workflows compute clusters (gates, verdicts, checks, fixtures) —
                           see .rpiv/guidance/packages/rpiv-pi/extensions/rpiv-core/built-ins/architecture.md
+workflows/             — Per-workflow authoring modules behind the built-ins: shared.ts (cross-workflow
+                          gate + prompt factories) + build.ts / vet.ts / polish.ts / ship.ts (one
+                          defineWorkflow graph each), composed position-pinned by built-in-workflows.ts
 *.ts (utilities)        — Primitive helpers: siblings, package-checks, paths, pi-installer, prune-legacy-siblings,
                           bash-timeout, banner, constants, frontmatter, utils.
 ```
@@ -61,7 +74,7 @@ Pattern: each capability is a source module + co-located `<feature>.test.ts`.
 `workflow-execution-host.ts` installs the executor provider on the ROOT launcher's `session_start` — gate: `if (!ctx.hasUI || isLaneRelayUiContext(ctx.ui)) return;` — so a detached child re-loading rpiv-core can never overwrite the process-global provider box. Per-unit models are resolved through the captured registry and applied at child-session creation, never via a global `pi.setModel()` flip. Each child's `ask_user_question` binds the deferring lane-relay UI: questions queue + badge in the lane dock, and the switcher replays them on switch-in. Child bash commands run under a watchdog (`bash-timeout.ts`): 3-minute default, overridable via `RPIV_BASH_TIMEOUT_MS`, clamped to 5 s–30 min. The watchdog's host-port twins live in `sdk-workflow-host.ts`: `toolTimeout: () => watchdog.timedOut()` and `resetToolTimeout: () => watchdog.reset()` (a resumed turn's new bash call re-arms a fresh timer on the same handle); `readSessionBranch` (backed by `SessionManager.open(file).getBranch()`, fail-soft) is wired in `workflow-execution-host.ts` and feeds `rpiv-workflow`'s death-scene artifact writer the failed session's transcript without a live re-query. Per-run concurrency is config-driven (`maxConcurrency`, default 6); a focus-gated Ctrl-C tap aborts the active run. Cross-module state lives on `globalThis[Symbol.for("@juicesharp/rpiv-pi:…")]` slots, never module-level variables — `session-capture.ts` and `lane-tool-defs.ts` are the two documented exemptions (deliberately plain module-level state).
 
 ## Architectural Boundaries
-- **Editing `built-in-workflows.ts` requires the workflow-invariant check**: after any change to it, run `node packages/rpiv-pi/skills/elaborate/_helpers/validate-workflow-invariant.mjs` — it re-derives the live built-in workflows + skill contracts and surfaces `route-reads-unvalidated-data` (and other) validation issues before they ship. This is the project-specific invariant check the `elaborate`/`implement` self-check protocol asks the guidance to name.
+- **Editing `built-in-workflows.ts` or any `workflows/*.ts` module requires the workflow-invariant check**: after any change to them, run `node packages/rpiv-pi/skills/elaborate/_helpers/validate-workflow-invariant.mjs` — it re-derives the live built-in workflows + skill contracts and surfaces `route-reads-unvalidated-data` (and other) validation issues before they ship. This is the project-specific invariant check the `elaborate`/`implement` self-check protocol asks the guidance to name.
 - **NO business logic in the composer**: orchestration only — every capability owns its own registrar module
 - **NO `ExtensionAPI` in pure-utility modules**: helpers (sibling registry, package checks, agent sync, installer, legacy pruner) take primitives only; the guidance engine takes `pi` explicitly
 - **Sibling imports are guarded + optional only**: presence detection stays filesystem-based (regex over `~/.pi/agent/settings.json`). No file statically reachable from `index.ts` may value-import a sibling — enforced by `sibling-import-graph.test.ts`; runtime loads (`rpiv-workflow`, opt-in `rpiv-warp`) are guarded dynamic imports that degrade silently when absent
