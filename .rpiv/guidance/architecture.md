@@ -46,7 +46,7 @@ rpiv-mono/
 | `node scripts/sync-versions.js` | Verify lockstep + rewrite intra-monorepo deps to `^<version>` |
 
 Husky hooks (local-only):
-- `pre-commit` — runs `npm run check:decision-codes` (fail-fast contamination guard) then `npm run check` (format + typecheck); restages files biome may have rewritten
+- `pre-commit` — runs `npm run check:decision-codes` (fail-fast contamination guard) then `npm run check:file-sizes` (fail-fast size-growth ratchet), then `npm run check` (format + typecheck); restages files biome may have rewritten
 - `pre-push` — runs `npm run coverage` (full test + coverage thresholds gate)
 
 # Conventions

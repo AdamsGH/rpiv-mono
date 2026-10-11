@@ -10,6 +10,7 @@
 		"check": "biome check --write --error-on-warnings . && tsc --noEmit -p tsconfig.base.json",
 		"check:files": "biome check --write --error-on-warnings",
 		"check:decision-codes": "node scripts/check-no-decision-codes.mjs",
+		"check:file-sizes": "node scripts/check-file-sizes.mjs",
 		"build:site": "npm run build --workspace=@juicesharp/rpiv-site",
 		"test": "vitest run",
 		"coverage": "vitest run --coverage",
