@@ -113,15 +113,24 @@ function isTerminalFailure(status: LaneStatus | undefined): boolean {
 }
 
 /**
+ * Marks `terminal.rows` as an allocation rather than the screen height, so
+ * rpiv-ask-user-question skips its inline editor-slot cap (70% of the terminal) and uses
+ * the whole band. A registry symbol keeps this free of an import from that package.
+ */
+const HOST_ALLOCATED_ROWS = Symbol.for("rpiv-ask-user-question:host-allocated-rows");
+
+/**
  * A TUI proxy that reports a capped `terminal.rows` (the embedded questionnaire's
  * allocated band) while forwarding everything else — requestRender, columns, cursor.
  * DialogView reads getTerminalRows() → tui.terminal.rows at render time, so this makes
- * the questionnaire self-window to its band with no ask-user-question change.
+ * the questionnaire self-window to its band; `HOST_ALLOCATED_ROWS` tells it the rows are
+ * already budgeted.
  */
 export function cappedTui(real: TUI, rows: () => number): TUI {
 	const terminal = new Proxy(real.terminal as object, {
 		get(t, p) {
 			if (p === "rows") return Math.max(1, rows());
+			if (p === HOST_ALLOCATED_ROWS) return true;
 			const v = Reflect.get(t, p, t);
 			return typeof v === "function" ? v.bind(t) : v;
 		},
