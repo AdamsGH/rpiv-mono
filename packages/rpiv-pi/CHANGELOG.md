@@ -7,6 +7,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Workflow child sessions share the launcher's model runtime on Pi 0.80.8 and later.** Pi 0.80.8 replaced `createAgentSession({ modelRegistry })` with `modelRuntime` and ignores the old option, so every `/wf` stage and fanout unit built its own runtime from disk. Those children lost launcher-only model state: a `pi --api-key` key, providers registered by `-e` or launcher-only extensions, and a settings default model on an extension provider (the child quietly used another model). Children now receive the launcher's `ModelRuntime`, read from the `ModelRegistry` facade like `rpiv-advisor` and `rpiv-btw` already do. Pi 0.80.7 and earlier still get the registry. ([#293](https://github.com/juicesharp/rpiv-mono/issues/293))
+- **An unresolvable stage model fails the run instead of running on a different model.** A malformed or unknown model key from `models.json` used to pass `undefined` to the child, so Pi picked its default model with no warning. The host now throws `UnresolvedModelError` naming the key before it creates a child session, and the run halts with that message. ([#293](https://github.com/juicesharp/rpiv-mono/issues/293))
+
 ## [2.13.4] - 2026-10-11
 
 ## [2.13.3] - 2026-10-11
