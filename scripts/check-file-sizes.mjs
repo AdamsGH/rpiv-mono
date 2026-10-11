@@ -105,7 +105,13 @@ function loadBaseline() {
 	}
 	try {
 		const parsed = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
-		if (parsed === null || typeof parsed !== "object" || typeof parsed.files !== "object") {
+		if (
+			parsed === null ||
+			typeof parsed !== "object" ||
+			parsed.files === null ||
+			typeof parsed.files !== "object" ||
+			Array.isArray(parsed.files)
+		) {
 			throw new Error('not a baseline document (expected { "files": { ... } })');
 		}
 		return parsed.files;
@@ -178,7 +184,7 @@ if (violations.length > 0) {
 }
 
 console.log(
-	`OK — ${baselinedCount + newUnderCap} files within ratchet (baseline ${baselinedCount} entries, ${newUnderCap} new under cap, ${newUnderCap} unregistered).`,
+	`OK — ${baselinedCount + newUnderCap} files within ratchet (${baselinedCount} baselined, ${newUnderCap} new under cap).`,
 );
 if (newUnderCap > 0) {
 	console.log(`note: ${newUnderCap} new files under cap — run --update-baseline to ratchet them in`);
