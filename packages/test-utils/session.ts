@@ -47,6 +47,11 @@ export function makeMessageEntry(message: Message): SessionEntry {
 	return { type: "message", message } as unknown as SessionEntry;
 }
 
+/** A `custom` session entry, as `pi.appendEntry(customType, data)` persists it (never sent to the LLM). */
+export function makeCustomEntry(customType: string, data: unknown): SessionEntry {
+	return { type: "custom", customType, data } as unknown as SessionEntry;
+}
+
 export function buildSessionEntries(messages: Message[]): SessionEntry[] {
 	return messages.map(makeMessageEntry);
 }
