@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Overlay files can import the authoring DSL and `typebox` in a standard Pi install.** `config.ts` and `packs/*.ts` overlays are loaded by rpiv-workflow's own jiti, outside Pi's extension module mapping, so `import … from "@juicesharp/rpiv-workflow"` failed with `Cannot find module`, and so did `typebox`, which Pi provides to extensions rather than installing. It only worked when another package happened to leave a physical `typebox` in `node_modules`. The overlay loader now maps `@juicesharp/rpiv-workflow` (and `/registration`, `/startup`, `/runner`) to the running package and `typebox` (`/value`, `/compile`) to the copy Pi supplies, the same way Pi's loader does for extensions. ([#298](https://github.com/juicesharp/rpiv-mono/issues/298))
+
 ## [2.13.5] - 2026-10-12
 
 ## [2.13.4] - 2026-10-11
