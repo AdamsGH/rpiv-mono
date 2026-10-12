@@ -7,9 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Changed
+### Fixed
 
-- Limit the model-visible `web_search` provider choices to configured providers, keep the active provider visible, and identify the default provider in the tool schema description.
+- `web_search` no longer runs on an unconfigured provider the model picked itself. The `provider` parameter used to list every supported backend, so a model could pass `provider: "brave"` and override the provider chosen in `/web-tools`. It now lists only configured providers (a resolved API key, or an explicit base URL) plus the active one, the description names the default provider and its source, and saving in `/web-tools` refreshes the list without a restart (#204, #256).
 
 ## [2.13.6] - 2026-10-12
 

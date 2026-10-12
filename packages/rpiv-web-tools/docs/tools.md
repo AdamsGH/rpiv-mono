@@ -56,7 +56,9 @@ The optional `provider` parameter routes a single call to a different configured
 backend without mutating persisted config and without a session restart. At tool
 registration, the schema exposes only providers with a resolved API key or
 explicit base URL, plus the active provider. The provider description identifies
-the default provider and its source (`env`, `config`, or `default`).
+the default provider and its source (`env`, `config`, or `default`). Saving in
+`/web-tools` re-registers the tool, so the list follows the new configuration
+without a restart; environment-variable changes take effect on the next start.
 
 The named provider must have its own credentials — the override does **not**
 inherit the active provider's key, and an unconfigured target throws the usual

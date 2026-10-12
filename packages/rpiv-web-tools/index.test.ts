@@ -2427,6 +2427,51 @@ describe("web_search.execute — per-call provider override", () => {
 // and config.provider. Lets an operator pin a backend via env without editing
 // config.json; validated like the override so a bogus name throws (no silent
 // fallback) rather than degrading to default.
+describe("web_search provider schema tracks the configured providers (#204)", () => {
+	function providerSchema(captured: ReturnType<typeof registerAndCapture>["captured"]) {
+		const params = captured.tools.get("web_search")?.parameters as unknown as {
+			properties: { provider: { anyOf: Array<{ const: string }>; description: string } };
+		};
+		return {
+			names: params.properties.provider.anyOf.map((e) => e.const),
+			description: params.properties.provider.description,
+		};
+	}
+
+	it("a configured Tavily is the only provider offered — brave is not advertised", () => {
+		writeConfig({ provider: "tavily", apiKeys: { tavily: "tvly-key" } });
+		const { captured } = registerAndCapture();
+		const schema = providerSchema(captured);
+		expect(schema.names).toEqual(["tavily"]);
+		expect(schema.description).not.toContain("brave");
+		expect(schema.description).toContain("Default provider: tavily (source: config)");
+	});
+
+	it("a /web-tools save refreshes the schema without a restart", async () => {
+		const { captured } = registerAndCapture();
+		expect(providerSchema(captured).names).toEqual(["brave"]); // nothing configured yet
+
+		const ctx = createMockCtx({ hasUI: true });
+		(ctx.ui.select as ReturnType<typeof vi.fn>).mockResolvedValueOnce("Tavily");
+		(ctx.ui.input as ReturnType<typeof vi.fn>).mockResolvedValueOnce("tvly-key");
+		await captured.commands.get("web-tools")?.handler("", ctx as never);
+
+		const schema = providerSchema(captured);
+		expect(schema.names).toEqual(["tavily"]);
+		expect(schema.description).toContain("Default provider: tavily (source: config)");
+	});
+
+	it("an unchanged /web-tools run leaves the schema as registered", async () => {
+		writeConfig({ provider: "tavily", apiKeys: { tavily: "tvly-key" } });
+		const { captured } = registerAndCapture();
+		const before = captured.tools.get("web_search");
+		const ctx = createMockCtx({ hasUI: true });
+		(ctx.ui.select as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+		await captured.commands.get("web-tools")?.handler("", ctx as never);
+		expect(captured.tools.get("web_search")).toBe(before);
+	});
+});
+
 describe("web_search.execute — WEB_SEARCH_PROVIDER precedence", () => {
 	it("WEB_SEARCH_PROVIDER beats config.provider", async () => {
 		process.env.WEB_SEARCH_PROVIDER = "tavily";
