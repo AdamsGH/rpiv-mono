@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-pi` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.8] - 2026-10-12
 
 ### Fixed
 - The lane browser (`/lanes`) scrolls in Pi's fullscreen TUI. Pi keeps `PgUp`/`PgDn` for its own transcript there, so the browser now also pages with `u`/`d`, and the mouse wheel over the browser scrolls the selected lane's transcript instead of the parent session (Pi 0.87+; also while answering a parked question). Regular mode is unchanged (#173).
