@@ -18,7 +18,7 @@ import { type AgentInjectionContext, injectModelFrontmatter } from "./agents-inj
 import { cleanupPerCwdAgents, isSafeDestructiveOp, syncBundledAgents } from "./agents-sync.js";
 import { CLEANUP_SKIP_REASON, SYNC_OP } from "./agents-types.js";
 import { loadModelsConfig, type ModelsConfig } from "./models-config.js";
-import { findInstalledSiblings } from "./package-checks.js";
+import { findInstalledSiblings, type LoadedSiblingSources } from "./package-checks.js";
 import { BUNDLED_AGENTS_DIR } from "./paths.js";
 
 const sha256 = (s: string | Buffer) => createHash("sha256").update(s).digest("hex");
@@ -758,6 +758,28 @@ describe("agent enablement injection (install-gated, config-driven)", () => {
 		expect(r.updated).toContain(ANALYZER);
 		expect(r.pendingUpdate).not.toContain(SCANNER);
 		expect(dest(SCANNER)).toBe(bundledContent(SCANNER));
+	});
+
+	// #216: a sibling loaded outside the settings file (bundled in another
+	// package) opens the gate exactly as declaring it would; without the runtime
+	// snapshot the answer is the settings-only one.
+	it("e2e: a sibling loaded but not declared opens the gate; no snapshot keeps it closed", () => {
+		writeSettings(["npm:frida-pi-studio"]);
+		writeModels(ENABLE_CFG);
+		const loaded: LoadedSiblingSources = {
+			extensionPaths: [
+				"/home/u/.pi/agent/npm/node_modules/frida-pi-studio/node_modules/@juicesharp/rpiv-web-tools/index.ts",
+			],
+			markers: new Set(),
+		};
+
+		syncBundledAgents(true);
+		expect(dest(SCANNER)).toBe(bundledContent(SCANNER)); // settings-only: gate closed
+
+		syncBundledAgents(true, loaded);
+		expect(dest(SCANNER)).toContain("tools: grep, find, ls, ext:rpiv-web-tools/tool_a");
+		const r = syncBundledAgents(false, loaded);
+		expect(r.unchanged).toContain(SCANNER); // same snapshot → stable hashes
 	});
 
 	it("cleanupPerCwdAgents: gate-on legacy content cleans up; a flipped gate skips it DIVERGED", () => {

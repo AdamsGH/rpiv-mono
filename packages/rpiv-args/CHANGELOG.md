@@ -7,6 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- A presence marker (`globalThis[Symbol.for("@juicesharp/rpiv-args:loaded")]`) set on load, so rpiv-pi can tell rpiv-args is loaded even when it is bundled inside another package — it registers no tool or command to find it by (#216).
+
 ## [2.13.7] - 2026-10-12
 
 ## [2.13.6] - 2026-10-12

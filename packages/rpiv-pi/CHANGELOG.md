@@ -7,6 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Siblings that load without their own settings entry are no longer reported missing. A sibling bundled inside another Pi package (a kit), installed per project (`pi install -l`), or loaded with `pi -e` now counts as present when it is actually loaded, so the missing-siblings banner stays quiet and `/rpiv-setup` no longer installs a second copy whose tools conflict. Detection only ever adds siblings: a sibling found in `settings.json` is still found, and a fresh install still lists everything (#216).
+
 ## [2.13.7] - 2026-10-12
 
 ## [2.13.6] - 2026-10-12

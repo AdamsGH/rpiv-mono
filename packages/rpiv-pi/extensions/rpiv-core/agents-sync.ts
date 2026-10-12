@@ -24,7 +24,7 @@ import {
 	type SyncResult,
 } from "./agents-types.js";
 import { loadModelsConfig } from "./models-config.js";
-import { findInstalledSiblings } from "./package-checks.js";
+import { findInstalledSiblings, type LoadedSiblingSources } from "./package-checks.js";
 import { BUNDLED_AGENTS_DIR } from "./paths.js";
 import { toErrorMessage } from "./utils.js";
 
@@ -69,6 +69,7 @@ function processSourceEntries(
 	manifest: Manifest,
 	apply: boolean,
 	result: SyncResult,
+	loaded: LoadedSiblingSources | undefined,
 ): Manifest {
 	const newManifest: Manifest = {};
 
@@ -81,7 +82,7 @@ function processSourceEntries(
 	// mid-pass would tear the recorded hashes and falsely flag agents
 	// diverged.
 	const injection: AgentInjectionContext = {
-		installedExtensions: installedExtensionNames(findInstalledSiblings().map((s) => s.pkg)),
+		installedExtensions: installedExtensionNames(findInstalledSiblings(loaded).map((s) => s.pkg)),
 	};
 
 	for (const entry of sourceEntries) {
@@ -254,9 +255,12 @@ function commitStaleUnlinks(
  * mid-sync leaves the manifest claiming files-already-removed (next run picks
  * those up via the vanish branch and reports them in result.removed).
  *
+ * `loaded` is the caller's one-per-pass runtime snapshot (`readLoadedSiblingSources`)
+ * for the sibling enablement gate; omitted, the gate reads settings only.
+ *
  * Never throws — errors are collected in `result.errors`.
  */
-export function syncBundledAgents(apply: boolean): SyncResult {
+export function syncBundledAgents(apply: boolean, loaded?: LoadedSiblingSources): SyncResult {
 	const result = emptySyncResult();
 
 	if (!existsSync(BUNDLED_AGENTS_DIR)) {
@@ -280,7 +284,7 @@ export function syncBundledAgents(apply: boolean): SyncResult {
 	const sourceNames = new Set(sourceEntries);
 	const manifest = readManifest(targetDir);
 
-	const newManifest = processSourceEntries(sourceEntries, targetDir, manifest, apply, result);
+	const newManifest = processSourceEntries(sourceEntries, targetDir, manifest, apply, result, loaded);
 
 	const toUnlink = classifyStaleEntries(manifest, sourceNames, targetDir, apply, newManifest, result);
 
@@ -302,9 +306,9 @@ export function syncBundledAgents(apply: boolean): SyncResult {
  *   3. No non-managed files exist in the directory
  *
  * If any check fails, the directory is left intact. Never throws — errors
- * are collected in the CleanupResult.
+ * are collected in the CleanupResult. `loaded`: same snapshot as syncBundledAgents.
  */
-export function cleanupPerCwdAgents(cwd: string): CleanupResult {
+export function cleanupPerCwdAgents(cwd: string, loaded?: LoadedSiblingSources): CleanupResult {
 	const result = emptyCleanupResult();
 	const perCwdDir = join(cwd, ".pi", "agents");
 
@@ -324,7 +328,7 @@ export function cleanupPerCwdAgents(cwd: string): CleanupResult {
 	// must use one settings read for the whole pass — the identical gate a
 	// sync pass with the same settings would have used.
 	const cleanupInjection: AgentInjectionContext = {
-		installedExtensions: installedExtensionNames(findInstalledSiblings().map((s) => s.pkg)),
+		installedExtensions: installedExtensionNames(findInstalledSiblings(loaded).map((s) => s.pkg)),
 	};
 	for (const [name] of Object.entries(manifest)) {
 		const srcPath = safeJoin(BUNDLED_AGENTS_DIR, name);

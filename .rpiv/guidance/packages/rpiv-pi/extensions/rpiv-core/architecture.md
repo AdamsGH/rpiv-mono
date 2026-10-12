@@ -1,7 +1,7 @@
 # rpiv-core Extension
 
 ## Monorepo Context
-Lives inside `packages/rpiv-pi/`. Sibling tool source is at `../../../rpiv-<name>/`; this extension never statically value-imports them from the entry graph — `siblings.ts` regex-detects them in `~/.pi/agent/settings.json`. Adding a new sibling requires a `siblings.ts` entry plus a `peerDependencies` line in `rpiv-pi/package.json` pinned to `"*"` (the registry also covers pinned third-party runtime deps — e.g. `@tintinweb/pi-subagents`, the Agent dispatcher rpiv-pi needs installed, with a fork-detection regex; its unscoped legacy name rides `LEGACY_SIBLINGS` and is pruned on upgrade). Version changes flow through `node scripts/release.mjs` at monorepo root.
+Lives inside `packages/rpiv-pi/`. Sibling tool source is at `../../../rpiv-<name>/`; this extension never statically value-imports them from the entry graph — `siblings.ts` regex-detects them in `~/.pi/agent/settings.json` OR in the source paths of what is loaded (#216). Adding a new sibling requires a `siblings.ts` entry plus a `peerDependencies` line in `rpiv-pi/package.json` pinned to `"*"` (the registry also covers pinned third-party runtime deps — e.g. `@tintinweb/pi-subagents`, the Agent dispatcher rpiv-pi needs installed, with a fork-detection regex; its unscoped legacy name rides `LEGACY_SIBLINGS` and is pruned on upgrade). Version changes flow through `node scripts/release.mjs` at monorepo root.
 
 ## Responsibility
 Pi runtime orchestrator and detached-execution launcher/observer host. Owns zero tools. Wires session lifecycle hooks (guidance injection, git-context injection, pipeline-stage index, bundled-agent sync) and registers the rpiv-* slash commands plus the non-prefixed `/lanes`. Every `/wf` stage runs in an isolated child session spawned via the Pi SDK (`sdk-workflow-host.ts`, bounded parallel fan-out, subagent token accounting); the interactive session stays a launcher/observer with an always-on lane dock, lane browser/console, and a question-lifecycle → Warp bridge. Also hosts the model-management layer (`models.json` validation, `/rpiv-models` picker, `/skill:` override bracket) and contributes the four built-in `/wf` workflows (build / vet / polish / ship) + skill contracts into the `@juicesharp/rpiv-workflow` sibling via guarded dynamic imports. Pipeline-stage skills carry `disable-model-invocation` — gated to explicit `/skill:<name>` or workflow dispatch, with a compact stage index injected at session start (`pipeline-pointer.ts`). All tool surfaces live in sibling plugins listed in `siblings.ts`; all workflow intelligence lives in `skills/`.
@@ -15,7 +15,7 @@ Pi runtime orchestrator and detached-execution launcher/observer host. Owns zero
 - Node built-ins: `node:fs`, `node:path`, `node:url`, `node:os`, `node:child_process`.
 - External processes: `git` (via `pi.exec`), `pi` CLI (via `spawn` for the installer), `node` (the build workflow's code-splice stage shells out to `skills/_shared/stitch-elaborations.mjs` via `execFileSync`).
 
-Sibling *presence detection* stays filesystem-based (regex over settings); two siblings load at runtime — `rpiv-workflow` and the opt-in `rpiv-warp` — always through guarded optional dynamic import. `sibling-import-graph.test.ts` enforces that no file statically reachable from `index.ts` value-imports a sibling.
+Sibling *presence detection* is settings ∪ loaded: `package-checks.ts` unions the settings regex with a runtime snapshot (`loaded-siblings.ts` `readLoadedSiblingSources(pi)` — `sourceInfo.path` of every tool and `source: "extension"` command, plus `marker` slots on `globalThis` for siblings with neither, today only rpiv-args) taken ONCE per pass (session_start maintenance, `/rpiv-setup`, `/rpiv-update-agents`) and threaded into the banner, the installer and both agents-sync gates. Omitting the snapshot is exactly the settings-only rule, so the union can only find MORE siblings (kits, `pi install -l`, `pi -e` — #216); two siblings load at runtime — `rpiv-workflow` and the opt-in `rpiv-warp` — always through guarded optional dynamic import. `sibling-import-graph.test.ts` enforces that no file statically reachable from `index.ts` value-imports a sibling.
 
 ## Consumers
 - **Pi extension host**: loads via `package.json` `"pi": { "extensions": ["./extensions"] }`; calls `default export(pi: ExtensionAPI)` at session start — and again inside every detached child session, which is why registration must be root-gated + idempotent
@@ -65,7 +65,7 @@ built-ins/              — Extracted built-in-workflows compute clusters (gates
 workflows/             — Per-workflow authoring modules behind the built-ins: shared.ts (cross-workflow
                           gate + prompt factories) + build.ts / vet.ts / polish.ts / ship.ts (one
                           defineWorkflow graph each), composed position-pinned by built-in-workflows.ts
-*.ts (utilities)        — Primitive helpers: siblings, package-checks, paths, pi-installer, prune-legacy-siblings,
+*.ts (utilities)        — Primitive helpers: siblings, package-checks, loaded-siblings, paths, pi-installer, prune-legacy-siblings,
                           bash-timeout, banner, constants, frontmatter, utils.
 ```
 Pattern: each capability is a source module + co-located `<feature>.test.ts`.
@@ -77,7 +77,7 @@ Pattern: each capability is a source module + co-located `<feature>.test.ts`.
 - **Editing `built-in-workflows.ts` or any `workflows/*.ts` module requires the workflow-invariant check**: after any change to them, run `node packages/rpiv-pi/skills/elaborate/_helpers/validate-workflow-invariant.mjs` — it re-derives the live built-in workflows + skill contracts and surfaces `route-reads-unvalidated-data` (and other) validation issues before they ship. This is the project-specific invariant check the `elaborate`/`implement` self-check protocol asks the guidance to name.
 - **NO business logic in the composer**: orchestration only — every capability owns its own registrar module
 - **NO `ExtensionAPI` in pure-utility modules**: helpers (sibling registry, package checks, agent sync, installer, legacy pruner) take primitives only; the guidance engine takes `pi` explicitly
-- **Sibling imports are guarded + optional only**: presence detection stays filesystem-based (regex over `~/.pi/agent/settings.json`). No file statically reachable from `index.ts` may value-import a sibling — enforced by `sibling-import-graph.test.ts`; runtime loads (`rpiv-workflow`, opt-in `rpiv-warp`) are guarded dynamic imports that degrade silently when absent
+- **Sibling imports are guarded + optional only**: presence detection is settings ∪ loaded (never an import — `sourceInfo` paths and `globalThis` marker slots). No file statically reachable from `index.ts` may value-import a sibling — enforced by `sibling-import-graph.test.ts`; runtime loads (`rpiv-workflow`, opt-in `rpiv-warp`) are guarded dynamic imports that degrade silently when absent
 - **Hooks owning process-global state are root-gated + idempotent**: registered on the root launcher's `session_start`, skipped for detached children, safe under `/reload` — never in a module-load IIFE
 - **NO tools registered here**: rpiv-core is a pure orchestrator — new tools belong in sibling plugins (registration pattern: `.rpiv/guidance/packages/rpiv-advisor/architecture.md`)
 
@@ -85,7 +85,7 @@ Pattern: each capability is a source module + co-located `<feature>.test.ts`.
 ## Adding a New Tool
 New tools do not belong in rpiv-core. Add the tool to a sibling plugin instead:
 1. Add it to an existing sibling or create a new sibling plugin (see `.rpiv/guidance/architecture.md`)
-2. Add one entry to `SIBLINGS` in `siblings.ts` — presence detection, missing-plugin warning, and `/rpiv-setup` all pick it up automatically
+2. Add one entry to `SIBLINGS` in `siblings.ts` — presence detection, missing-plugin warning, and `/rpiv-setup` all pick it up automatically (a sibling with no tool or extension command must also set a `marker` slot on load and name it in its entry, as rpiv-args does)
 3. Pin the package in `rpiv-pi/package.json` `peerDependencies` as `"*"`
 </important>
 
