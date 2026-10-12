@@ -159,12 +159,17 @@ export class DialogView implements StatefulView<DialogProps> {
 		const natural = this.buildContainerFromStrategy(strategy, headingRowCache).render(width);
 
 		// Residual spacer: equalizes total height across tabs (only needed when no overflow).
+		// Resting mid rows (a question's saved-note row, #197) come out of the spacer's slack,
+		// so a tab with a note keeps the shared height when the body leaves room. The open
+		// notes editor deliberately grows the dialog instead, so it is not absorbed.
+		const restingMidRows = state.notesVisible ? 0 : this.rowsAroundBody(strategy, width) - 1;
 		const spacerRows = Math.max(
 			0,
 			this.config.getBodyHeight(width) +
 				this.maxFooterRowCount -
 				strategy.bodyHeight(width, state) -
-				strategy.footerRowCount,
+				strategy.footerRowCount -
+				restingMidRows,
 		);
 
 		// The spacer is padding for a stable cross-tab footprint, not content: when only the

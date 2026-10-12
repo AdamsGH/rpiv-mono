@@ -22,6 +22,21 @@ import type { PreviewLayoutMode } from "./preview-layout-decider.js";
  * Re-exported by `preview-pane.ts` for the existing test surface.
  */
 export const NOTES_AFFORDANCE_TEXT = "Notes: press n to add notes";
+/** Affordance text once the question carries a saved note (#197). */
+export const NOTES_EDIT_AFFORDANCE_TEXT = "Note saved: press n to edit";
+
+/**
+ * Which notes affordance the block shows under the preview: `add` / `edit` (no note yet /
+ * a saved note) while the pane is focused with the notes editor closed, `none` otherwise.
+ * Decided by the pane from its props; the row itself is kept either way (height-stable).
+ */
+export type NotesAffordance = "add" | "edit" | "none";
+
+function affordanceText(affordance: Exclude<NotesAffordance, "none">): string {
+	return affordance === "edit"
+		? t("preview.notes_edit_affordance", NOTES_EDIT_AFFORDANCE_TEXT)
+		: t("preview.notes_affordance", NOTES_AFFORDANCE_TEXT);
+}
 
 /** Content row budget for a layout mode: preview cap minus border + affordance overhead. */
 function contentBudgetFor(mode: PreviewLayoutMode): number {
@@ -93,7 +108,7 @@ export class PreviewBlockRenderer {
 
 	/**
 	 * Height contribution of the preview block — always equal to `renderBlock(...).length`
-	 * for the same arguments (the affordance overhead is not gated by `focused`/`notesVisible`).
+	 * for the same arguments (the affordance overhead is not gated by the `NotesAffordance`).
 	 * `maxRows` is the row allowance the dialog can give the block; see `fitBlock`.
 	 */
 	blockHeight(width: number, optionIndex: number, mode: PreviewLayoutMode, maxRows?: number): number {
@@ -104,18 +119,16 @@ export class PreviewBlockRenderer {
 
 	/**
 	 * Render the preview block at `width`: bordered box, then (when it fits) a blank separator
-	 * and the notes-affordance row. `focused` and `notesVisible` together gate the affordance
-	 * text (visible only when the focused option carries a preview AND notes mode is inactive);
-	 * its row is emitted (empty when gated) whenever the block keeps it, so the row count only
-	 * depends on the fit. Under a `maxRows` allowance the box always closes and its bottom border
+	 * and the notes-affordance row. `affordance` picks the text (`none` blanks it), shown only when
+	 * the option carries a preview; the row is emitted (empty when gated) whenever the block keeps
+	 * it, so the row count only depends on the fit. Under a `maxRows` allowance the box always closes and its bottom border
 	 * counts the lines left out; with no room for a box the block is empty.
 	 */
 	renderBlock(
 		width: number,
 		optionIndex: number,
 		mode: PreviewLayoutMode,
-		focused: boolean,
-		notesVisible: boolean,
+		affordance: NotesAffordance,
 		maxRows?: number,
 	): string[] {
 		const maxInnerWidth = innerWidthFor(width);
@@ -130,10 +143,7 @@ export class PreviewBlockRenderer {
 		const boxedLines = renderBorderedBox(contentLines, boxWidth, colorFn, hidden);
 		if (!fit.affordance) return boxedLines;
 
-		const showAffordance = focused && !notesVisible && this.cache.has(optionIndex);
-		const affordance = showAffordance
-			? this.theme.fg("muted", t("preview.notes_affordance", NOTES_AFFORDANCE_TEXT))
-			: "";
-		return [...boxedLines, "", affordance];
+		const text = affordance !== "none" && this.cache.has(optionIndex) ? affordanceText(affordance) : "";
+		return [...boxedLines, "", text ? this.theme.fg("muted", text) : ""];
 	}
 }

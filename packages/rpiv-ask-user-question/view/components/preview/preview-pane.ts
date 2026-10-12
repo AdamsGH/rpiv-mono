@@ -4,7 +4,7 @@ import type { QuestionData } from "../../../tool/types.js";
 import { windowLines } from "../../scroll-window.js";
 import type { StatefulView } from "../../stateful-view.js";
 import type { OptionListView } from "../option-list-view.js";
-import type { PreviewBlockRenderer } from "./preview-block-renderer.js";
+import type { NotesAffordance, PreviewBlockRenderer } from "./preview-block-renderer.js";
 import {
 	bodyWidths,
 	columnWidths,
@@ -24,7 +24,7 @@ export {
 	NO_PREVIEW_TEXT,
 	NOTES_AFFORDANCE_OVERHEAD,
 } from "./markdown-content-cache.js";
-export { NOTES_AFFORDANCE_TEXT, PreviewBlockRenderer } from "./preview-block-renderer.js";
+export { NOTES_AFFORDANCE_TEXT, NOTES_EDIT_AFFORDANCE_TEXT, PreviewBlockRenderer } from "./preview-block-renderer.js";
 export {
 	BORDER_HORIZONTAL_OVERHEAD,
 	BORDER_INNER_PADDING_HORIZONTAL,
@@ -51,6 +51,8 @@ export {
  */
 export interface PreviewPaneProps {
 	notesVisible: boolean;
+	/** The question carries a saved note — the affordance offers to edit it rather than add one (#197). */
+	hasNote: boolean;
 	selectedIndex: number;
 	focused: boolean;
 	/**
@@ -111,7 +113,7 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 		this.optionListView = config.optionListView;
 		this.previewBlock = config.previewBlock;
 		this.theme = config.theme;
-		this.props = { notesVisible: false, selectedIndex: 0, focused: false, inputMode: false };
+		this.props = { notesVisible: false, hasNote: false, selectedIndex: 0, focused: false, inputMode: false };
 	}
 
 	setGlobalLeftWidth(getter: (paneWidth: number) => number): void {
@@ -127,6 +129,13 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 	}
 
 	/** Render-time geometry from `DialogView` (not canonical state, so not a prop). */
+	/** The notes affordance under the preview: shown while focused with the notes editor closed. */
+	private notesAffordance(): NotesAffordance {
+		const { focused, notesVisible, hasNote } = this.props;
+		if (!focused || notesVisible) return "none";
+		return hasNote ? "edit" : "add";
+	}
+
 	setRowAllowance(rows: number | undefined): void {
 		this.rowAllowance = rows;
 	}
@@ -171,7 +180,8 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 		width: number,
 		mode: PreviewLayoutMode,
 	): { lines: string[]; focus: [number, number] | undefined } {
-		const { selectedIndex, focused, notesVisible } = this.props;
+		const { selectedIndex } = this.props;
+		const affordance = this.notesAffordance();
 		const options = this.optionListView.render(width);
 		const focus = this.optionListView.focusedItemRowRange(width);
 		const gap = Array<string>(STACKED_GAP_ROWS).fill("");
@@ -179,11 +189,7 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 		const fullBlock = this.previewBlock.blockHeight(width, selectedIndex, mode);
 		if (allowance === undefined || options.length + STACKED_GAP_ROWS + fullBlock <= allowance) {
 			return {
-				lines: [
-					...options,
-					...gap,
-					...this.previewBlock.renderBlock(width, selectedIndex, mode, focused, notesVisible),
-				],
+				lines: [...options, ...gap, ...this.previewBlock.renderBlock(width, selectedIndex, mode, affordance)],
 				focus,
 			};
 		}
@@ -194,7 +200,7 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 			Math.min(fullBlock, allowance - STACKED_GAP_ROWS - Math.min(options.length, optionsFloor));
 		const roomy = previewRowsWith(focusRows + 2);
 		const previewRows = roomy >= MIN_BOX_ROWS ? roomy : previewRowsWith(focusRows);
-		const block = this.previewBlock.renderBlock(width, selectedIndex, mode, focused, notesVisible, previewRows);
+		const block = this.previewBlock.renderBlock(width, selectedIndex, mode, affordance, previewRows);
 		const optionRows = allowance - (block.length > 0 ? STACKED_GAP_ROWS + block.length : 0);
 		const windowed = windowLines(options, Math.max(1, optionRows), focus, this.theme);
 		return {
@@ -296,8 +302,7 @@ export class PreviewPane implements StatefulView<PreviewPaneProps>, Component {
 			inner,
 			this.props.selectedIndex,
 			mode,
-			this.props.focused,
-			this.props.notesVisible,
+			this.notesAffordance(),
 			maxRows,
 		);
 		const boxWidth = Math.max(1, visibleWidth(contentLines[0] ?? ""));

@@ -63,7 +63,10 @@ against the canonical English strings.
 multi-select and whether or not its options carry previews. Notes are stored in a
 side-band keyed by tab index, not inside the answer, so writing a note does not mark a
 question as answered — the Submit tab still lists it as outstanding. The note merges into
-the answer when you confirm it, and reaches the model as `user notes: <text>`.
+the answer when you confirm it, and reaches the model as `user notes: <text>`. Once the
+editor closes, the question shows the saved note as `Note for this answer: …` (its first
+line), and a preview pane's hint changes to "Note saved: press n to edit"; the Submit tab's
+review uses the same label.
 
 On the Submit tab, `n` opens the global note editor instead — one note covering the whole
 questionnaire. It lives outside every answer, so it survives tab switches and never marks

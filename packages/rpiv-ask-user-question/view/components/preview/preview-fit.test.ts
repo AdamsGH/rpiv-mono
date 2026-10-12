@@ -70,7 +70,7 @@ function makePane(q: QuestionData, terminalWidth: number, selectedIndex = 0) {
 		previewBlock,
 	});
 	pane.setGlobalLeftWidth((paneWidth) => adaptiveLeftWidth(items, items.length, paneWidth));
-	pane.setProps({ notesVisible: false, selectedIndex, focused: true, inputMode: false });
+	pane.setProps({ notesVisible: false, hasNote: false, selectedIndex, focused: true, inputMode: false });
 	return { pane, previewBlock };
 }
 
@@ -79,13 +79,13 @@ describe("PreviewBlockRenderer — fitting a row allowance", () => {
 	const block = new PreviewBlockRenderer({ question: q, theme, markdownTheme });
 
 	it("is unchanged when the allowance fits the full block", () => {
-		const full = block.renderBlock(60, 0, "side-by-side", true, false);
-		expect(block.renderBlock(60, 0, "side-by-side", true, false, 100)).toEqual(full);
+		const full = block.renderBlock(60, 0, "side-by-side", "add");
+		expect(block.renderBlock(60, 0, "side-by-side", "add", 100)).toEqual(full);
 		expect(block.blockHeight(60, 0, "side-by-side", 100)).toBe(full.length);
 	});
 
 	it("drops the notes affordance, then shrinks content, and still closes the box with the hidden count", () => {
-		const lines = block.renderBlock(60, 0, "side-by-side", true, false, 8).map(strip);
+		const lines = block.renderBlock(60, 0, "side-by-side", "add", 8).map(strip);
 		expect(lines).toHaveLength(8);
 		expect(block.blockHeight(60, 0, "side-by-side", 8)).toBe(8);
 		expect(lines[0]).toMatch(/^┌/);
@@ -94,7 +94,7 @@ describe("PreviewBlockRenderer — fitting a row allowance", () => {
 	});
 
 	it("renders nothing when not even one content line fits inside the border", () => {
-		expect(block.renderBlock(60, 0, "side-by-side", true, false, 2)).toEqual([]);
+		expect(block.renderBlock(60, 0, "side-by-side", "add", 2)).toEqual([]);
 		expect(block.blockHeight(60, 0, "side-by-side", 2)).toBe(0);
 	});
 });

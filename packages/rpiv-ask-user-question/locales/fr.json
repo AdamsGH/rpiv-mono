@@ -22,7 +22,9 @@
 
   "preview.no_preview": "Aucun aperçu disponible",
   "preview.notes_affordance": "Notes : appuyez sur n pour ajouter des notes",
+  "preview.notes_edit_affordance": "Note enregistrée : appuyez sur n pour la modifier",
   "notes.header": "Notes :",
+  "notes.saved_label": "Note pour cette réponse :",
 
   "editor.failed": "Échec de l’éditeur externe",
 

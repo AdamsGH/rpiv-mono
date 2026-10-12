@@ -22,7 +22,9 @@
 
   "preview.no_preview": "Предпросмотр недоступен",
   "preview.notes_affordance": "Заметки: нажмите n, чтобы добавить заметки",
+  "preview.notes_edit_affordance": "Заметка сохранена: нажмите n, чтобы изменить",
   "notes.header": "Заметки:",
+  "notes.saved_label": "Заметка к этому ответу:",
 
   "editor.failed": "Ошибка внешнего редактора",
 

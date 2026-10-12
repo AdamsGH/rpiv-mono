@@ -24,7 +24,9 @@
 
   "preview.no_preview": "No preview available",
   "preview.notes_affordance": "Notes: press n to add notes",
+  "preview.notes_edit_affordance": "Note saved: press n to edit",
   "notes.header": "Notes:",
+  "notes.saved_label": "Note for this answer:",
   "notes.global_header": "Global note:",
 
   "editor.failed": "External editor failed",

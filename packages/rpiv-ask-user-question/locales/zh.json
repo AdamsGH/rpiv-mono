@@ -24,7 +24,9 @@
 
   "preview.no_preview": "暂无预览",
   "preview.notes_affordance": "备注：按 n 添加",
+  "preview.notes_edit_affordance": "备注已保存：按 n 编辑",
   "notes.header": "备注：",
+  "notes.saved_label": "此回答的备注：",
 
   "editor.failed": "外部编辑器启动失败",
 

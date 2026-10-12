@@ -68,10 +68,13 @@ class QuestionTabStrategy implements TabContentStrategy {
     bodyHeight(w, _s) { return this.config.getCurrentBodyHeight(w); }
     // hint via OneLineClippedText (not Text): the collapse affordance would word-wrap and break footerRowCount=2
     footerRows(state) { return [Spacer, OneLineClippedText(hint)]; }
+    // midRows: notes editor while notesVisible; otherwise ONE OneLineClippedText row
+    // "Note for this answer: <first line>[ …]" when selectSavedNote finds a note (#197) — clipped so a long or
+    // multi-line note never crowds the body; mid rows are subtracted from the body allowance (rowsAroundBody)
 }
 // SubmitTabStrategy: footerRowCount = 5; pads missing picker with Spacer rows to preserve count; mounts the
 // shared notes Editor in midRows for the global note (GLOBAL_NOTES_HEADER) + a committed-note review entry
-// gated on !state.notesVisible; the submit hint row adds the global-note key while the editor is closed
+// gated on !state.notesVisible; per-question review notes use the same `notes.saved_label` as the question tab; the submit hint row adds the global-note key while the editor is closed
 ```
 
 ## DialogView Chrome Order (always)
@@ -83,9 +86,12 @@ Before building the container, `DialogView.render` computes the rows the body ma
 ## Residual Spacer (inline in `render()`)
 ```ts
 // Emits Math.max(0, ...) blank rows AFTER the footer (no overflow path only).
+// restingMidRows = mid rows while the notes editor is CLOSED (the saved-note row, #197) — absorbed so a
+// noted tab keeps the cross-tab height when the body leaves slack; the open editor still grows the dialog.
+const restingMidRows = state.notesVisible ? 0 : this.rowsAroundBody(strategy, width) - 1;
 const spacerRows = Math.max(0,
     this.config.getBodyHeight(width) + this.maxFooterRowCount
-    - strategy.bodyHeight(width, state) - strategy.footerRowCount);
+    - strategy.bodyHeight(width, state) - strategy.footerRowCount - restingMidRows);
 ```
 Absorbs footer-row-count asymmetry across tabs — total dialog height equals across Question and Submit tabs without inflating natural body height. Computed inline in `DialogView.render` (no separate component); under terminal overflow it is dropped in favour of the 3-region scroll partition. In that partition the heading rows (badge + question, measured in rendered rows) join the fixed top whenever at least `MIN_SCROLL_ROWS_WITH_PINNED_HEADING` (3) body rows remain, so the question never scrolls away; below that the heading scrolls with the body.
 

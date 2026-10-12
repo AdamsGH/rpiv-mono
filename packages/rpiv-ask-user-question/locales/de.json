@@ -22,7 +22,9 @@
 
   "preview.no_preview": "Keine Vorschau verfügbar",
   "preview.notes_affordance": "Notizen: drücke n, um Notizen hinzuzufügen",
+  "preview.notes_edit_affordance": "Notiz gespeichert: drücke n zum Bearbeiten",
   "notes.header": "Notizen:",
+  "notes.saved_label": "Notiz zu dieser Antwort:",
 
   "editor.failed": "Externer Editor fehlgeschlagen",
 

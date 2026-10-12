@@ -22,7 +22,9 @@
 
   "preview.no_preview": "Vista previa no disponible",
   "preview.notes_affordance": "Notas: pulsa n para añadir notas",
+  "preview.notes_edit_affordance": "Nota guardada: pulsa n para editarla",
   "notes.header": "Notas:",
+  "notes.saved_label": "Nota para esta respuesta:",
 
   "editor.failed": "Error del editor externo",
 
