@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-ask-user-question` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.6] - 2026-10-12
 
 ### Fixed
 - Multi-select questions submit checked options and `Type something.` text together. Both `Enter` in the input and `Next` return one `kind: "multi"` answer with the checked labels in `selected` and the custom text in `answer`; previously one path dropped the checks and the other dropped the text. The custom row shows `[✔]` while it has text. In RPC hosts, `1,3; custom answer` returns both (#188, #196).

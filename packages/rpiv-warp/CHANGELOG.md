@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-warp` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.6] - 2026-10-12
 
 ### Fixed
 - The tab-title spinner keeps the session name: while a turn runs a named session now reads `⠴ - <session> - <repo>` instead of collapsing to `⠴ - <repo>`, so concurrent named tabs stay distinguishable. Unnamed sessions are unchanged.

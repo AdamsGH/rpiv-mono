@@ -2,7 +2,7 @@
 
 All notable changes to this package will be documented in this file.
 
-## [Unreleased]
+## [2.13.6] - 2026-10-12
 
 ### Added
 - `createMockSessionManager` stubs `getSessionName()` (third positional argument), and `createMockCtx` accepts a `sessionName` option — the mock session manager now covers every `ReadonlySessionManager` method an extension can read. Default stays `undefined`, matching an unnamed session.
