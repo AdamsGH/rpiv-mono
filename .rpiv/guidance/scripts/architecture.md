@@ -61,6 +61,7 @@ The guard's second half scans `packages/**/*.ts` (`node_modules`, `dist`, `build
 - **Fail-fast via `process.exit(1)`** — no thrown errors at top level; the wrapped runner exits on shell failure
 - **Lockstep is sacred** — only one source of truth for the current version; `sync-versions.js` guarantees parity
 - **Filesystem-driven discovery** — `readdirSync("packages")` is the only enumeration mechanism; new packages auto-pick-up with no script edits
+- **`private: true` packages bump but don't publish** — `npm publish -ws` skips them automatically
 - **Host-provided packages are never `dependencies`** — Pi supplies and aliases them; the guard fails the build if a manifest claims its own installable copy
 - **Only host-aliased import specifiers** — `typebox`, `typebox/compile`, `typebox/value` (and the `@sinclair/typebox` spellings) resolve to the host's copy; every other `typebox/*` subpath is a second instance or a load-time failure, and the guard rejects it
 
