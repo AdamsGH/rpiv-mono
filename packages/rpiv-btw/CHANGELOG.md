@@ -9,6 +9,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`/btw` no longer sends the whole uncompacted conversation after a compaction.** It turned every message on the session branch into context, including the ones a compaction had summarized, but budgeted against the provider's token count for the main agent's compacted context. The budget check passed and then the full history went out, so long or compacted sessions could exceed the model's window and the provider rejected the call. `/btw` still reads only the branch, but now converts it with Pi's own context builder, so it sends the same context as the main model: the compaction summary plus kept and newer messages, with context edits applied on Pi 1.0+. ([#274](https://github.com/juicesharp/rpiv-mono/issues/274))
 - **Context truncation handles system messages on Pi 1.1.** Pi 1.1 added a `system` message role, and `convertToLlm` passes it through to `/btw`'s context. When the largest text block was a system message with string content, truncation split the string into characters, removed nothing and stopped while the request was still over budget. System messages now get their own truncation branch, for both string and text-part content.
 
 ## [2.13.4] - 2026-10-11

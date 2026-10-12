@@ -52,8 +52,18 @@ export function makeCustomEntry(customType: string, data: unknown): SessionEntry
 	return { type: "custom", customType, data } as unknown as SessionEntry;
 }
 
+/** A root→leaf branch of message entries, chained by `id`/`parentId` like a real
+ *  session path, so Pi's path-walking builders (`buildSessionContext`) traverse it. */
 export function buildSessionEntries(messages: Message[]): SessionEntry[] {
-	return messages.map(makeMessageEntry);
+	return messages.map(
+		(message, i) =>
+			({
+				type: "message",
+				id: `entry-${i}`,
+				parentId: i === 0 ? null : `entry-${i - 1}`,
+				message,
+			}) as unknown as SessionEntry,
+	);
 }
 
 export function buildLlmMessages(messages: Message[]): Message[] {
