@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-advisor` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.7] - 2026-10-12
 
 ### Fixed
 - The advisor no longer inherits the executor's tools. On Pi 1.x the copied context declares the executor's tools in its system messages, and providers sent them even with `tools: []`, so the advisor model could call a tool and fail with `Advisor returned no text content` (`stopReason: toolUse`). The declarations are now stripped; the system prompt text is kept (#295, #296).

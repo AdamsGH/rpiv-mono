@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-btw` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.7] - 2026-10-12
 
 ### Fixed
 - `/btw` no longer inherits the main agent's tools. On Pi 1.x the cloned context declares them in its system messages, and providers sent them even with `tools: []`, so a side question could end on a tool call with no answer. The declarations are now stripped; the system prompt text is kept (#295).

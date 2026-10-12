@@ -5,7 +5,7 @@ All notable changes to `@juicesharp/rpiv-ask-user-question` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.13.7] - 2026-10-12
 
 ### Fixed
 - A saved note no longer disappears when its editor closes. The question shows it as `Note for this answer: …` (one row; `n` reopens the full note), the preview hint changes to "Note saved: press n to edit", and the Submit-tab review uses the same label instead of a dim `notes:` line. Both strings are translated in every locale (#197).
