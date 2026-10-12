@@ -41,6 +41,10 @@ subagent-usage.ts       — Process-global subagent token accumulator on a Symbo
 lane-*.ts (family)      — Lane UI: belowEditor dock (+dock-editor), /lanes switcher, self-windowing console,
                           transcript replay live + disk-jsonl (lane-transcript*, lane-tool-defs renderer cache),
                           progress/usage/streaming/failure, shared lane-list renderer, deferring relay-ui.
+                          The console is an editor-slot `ui.custom` (not an overlay): in fullscreen Pi the
+                          viewport consumes PgUp/PgDn before it, so it also pages on `u`/`d` and takes the
+                          wheel via `handleMouse` (Pi offers wheel events to the component under the pointer
+                          first; `{ handled: true }` stops the parent scroll) — #173.
 question-lifecycle.ts   — workflow-question lifecycle events from the registry via a Symbol.for global slot;
                           workflow-question-warp-bridge.ts consumes them.
 *-command.ts / models-* / skill-* — Registrars: setup, update-agents, models-config(+validate,+sources),
