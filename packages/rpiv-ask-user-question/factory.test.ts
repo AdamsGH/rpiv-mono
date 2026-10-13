@@ -278,20 +278,22 @@ describe("ask_user_question — 'Type something.' free-text flow", () => {
 		expect(r?.details.answers[0].answer).toBe("hello");
 	});
 
-	it("Type something with no input → kind:'custom', answer=null", async () => {
+	it("Type something with no input or only spaces: Enter records nothing and stays on the row (#301)", async () => {
 		const tool = register();
 		const { custom } = driveCustom((c) => {
 			c.handleInput(KEY.DOWN); // → Second
 			c.handleInput(KEY.DOWN); // → Type something
-			c.handleInput(KEY.ENTER); // confirm with empty buffer
+			c.handleInput(KEY.ENTER); // empty buffer: ignored
+			for (const ch of "  ") c.handleInput(ch);
+			c.handleInput(KEY.ENTER); // blank buffer: ignored
+			for (const ch of "x") c.handleInput(ch);
+			c.handleInput(KEY.ENTER);
 		});
 		const ctx = { hasUI: true, ui: { custom } } as never;
 		const r = (await tool.execute?.("tc", freeTextParams as never, undefined as never, undefined as never, ctx)) as
 			| ToolResult
 			| undefined;
-		expect(r?.details.answers[0].kind).toBe("custom");
-		expect(r?.details.answers[0].answer).toBeNull();
-		expect(r?.content[0].text).toContain("(no input)");
+		expect(r?.details.answers).toEqual([{ questionIndex: 0, question: "Name?", kind: "custom", answer: "  x" }]);
 	});
 
 	it("Type text, backspace removes last char, then Enter", async () => {

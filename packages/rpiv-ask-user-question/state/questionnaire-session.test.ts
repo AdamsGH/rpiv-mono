@@ -163,11 +163,7 @@ describe("QuestionnaireSession — custom-answer drafts", () => {
 		session.dispatch("discard me");
 		session.dispatch(CTRL_U);
 		session.dispatch(ENTER);
-
-		expect(done).toHaveBeenCalledWith({
-			answers: [expect.objectContaining({ kind: "custom", answer: null })],
-			cancelled: false,
-		});
+		expect(done).not.toHaveBeenCalled(); // a cleared draft is not an answer (#301)
 	});
 
 	it("replaces the inline draft with the external editor result", async () => {

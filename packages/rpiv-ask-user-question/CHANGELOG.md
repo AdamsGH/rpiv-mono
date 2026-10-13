@@ -11,6 +11,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `rpiv:ask-user:answer` — an inbound event that answers or cancels an open questionnaire without synthesizing keystrokes, for programs driving Pi from outside (pane supervisors, phone or web bridges, test harnesses). It names the questionnaire by `toolCallId`, now carried on the prompt and blocked events, so parallel questionnaires are never confused. It is accepted from the moment the prompt is emitted, the first answer wins (terminal or event), validation is strict and all-or-nothing, and every attempt gets one verdict with a machine-readable `code` on `rpiv:ask-user:answer-result`. Terminal dialog only. Thanks @yingzhi0808, and @catlain for #180. (#207)
 
+### Fixed
+
+- `Enter` on an empty or blank `Type something.` row in a single-select question no longer records an empty answer and moves on. It does nothing and the row keeps focus, so the question stays unanswered until you type something or pick an option. In RPC hosts, a blank reply in the "Type your answer" input returns to the options. Thanks @sargismarkosyan. (#301)
+
 ## [2.13.8] - 2026-10-12
 
 ## [2.13.7] - 2026-10-12

@@ -294,6 +294,18 @@ describe("ask_user_question.execute — RPC single-select replies", () => {
 		expect(answersOf(r)).toMatchObject({ cancelled: false, answers: [{ kind: "option", answer: "A" }] });
 	});
 
+	it("a blank 'Type something.' reply returns to the options instead of recording an empty answer (#301)", async () => {
+		const tool = register();
+		const replies = ["3. Type something.", "1. A — a"];
+		const select = vi.fn(async (_t: string, options: string[]) =>
+			replies.shift() === "1. A — a" ? options[0] : options.at(-1),
+		);
+		const input = vi.fn(async () => "   ");
+		const r = await run(tool, SINGLE, ctxRpc({ select, input }));
+		expect(select).toHaveBeenCalledTimes(2);
+		expect(answersOf(r)).toMatchObject({ cancelled: false, answers: [{ kind: "option", answer: "A" }] });
+	});
+
 	it("keeps earlier answers when a later question's follow-up is cancelled (#142)", async () => {
 		const tool = register();
 		const params = { questions: [SINGLE.questions[0], { ...SINGLE.questions[0], question: "And?", header: "Next" }] };
