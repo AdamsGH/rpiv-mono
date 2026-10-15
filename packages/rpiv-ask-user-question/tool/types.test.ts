@@ -2,7 +2,6 @@ import { Value } from "typebox/value";
 import { describe, expect, it } from "vitest";
 import {
 	isQuestionnaireResult,
-	MAX_HEADER_LENGTH,
 	MAX_LABEL_LENGTH,
 	MAX_OPTIONS,
 	MAX_QUESTIONS,
@@ -76,7 +75,7 @@ describe("QuestionSchema — option/preview/multiSelect/header shape", () => {
 		expect(Value.Check(QuestionsSchema, [makeQuestion({ multiSelect: true })])).toBe(true);
 	});
 
-	it("accepts a header up to MAX_HEADER_LENGTH chars", () => {
+	it("accepts a short header", () => {
 		expect(Value.Check(QuestionsSchema, [makeQuestion({ header: "Architecture" })])).toBe(true);
 	});
 
@@ -120,9 +119,17 @@ describe("QuestionSchema — option/preview/multiSelect/header shape", () => {
 		expect(Value.Check(QuestionsSchema, [noHeader])).toBe(false);
 	});
 
-	it("rejects a header longer than MAX_HEADER_LENGTH chars", () => {
-		const tooLong = "x".repeat(MAX_HEADER_LENGTH + 1);
-		expect(Value.Check(QuestionsSchema, [makeQuestion({ header: tooLong })])).toBe(false);
+	it.each(["x".repeat(17), "Disaster recovery strategy", "部署環境の認証とアクセス制御の選択".repeat(4)])(
+		"accepts a long header without changing its text: %s",
+		(header) => {
+			const params = { questions: [makeQuestion({ header })] };
+			expect(Value.Check(QuestionParamsSchema, params)).toBe(true);
+			expect(params.questions[0].header).toBe(header);
+		},
+	);
+
+	it("still rejects a non-string header", () => {
+		expect(Value.Check(QuestionsSchema, [makeQuestion({ header: 42 as never })])).toBe(false);
 	});
 
 	it("rejects a label longer than MAX_LABEL_LENGTH (60) chars", () => {
@@ -288,7 +295,6 @@ describe("schema constants + RESERVED_LABELS", () => {
 	it("exports the new schema constants with expected values", () => {
 		expect(MIN_OPTIONS).toBe(2);
 		expect(MAX_OPTIONS).toBe(4);
-		expect(MAX_HEADER_LENGTH).toBe(16);
 		expect(MAX_LABEL_LENGTH).toBe(60);
 	});
 

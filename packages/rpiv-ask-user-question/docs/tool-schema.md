@@ -10,7 +10,7 @@ ask_user_question({
   questions: [
     {
       question: string,            // full question text, ends with "?"
-      header: string,              // chip label, max 16 chars
+      header: string,              // tab label, shortened for terminal display only
       options: [
         {
           label: string,           // 1-5 words, max 60 chars
@@ -31,13 +31,18 @@ ask_user_question({
 | Field | Constraint | Enforced by |
 | --- | --- | --- |
 | `questions` | 1-4 entries | TypeBox schema + `validateQuestionnaire` |
-| `questions[].header` | max 16 characters | TypeBox schema only |
+| `questions[].header` | string, no length limit | TypeBox schema; terminal tab labels shorten to 16 columns |
 | `questions[].options` | 2-4 entries | TypeBox schema (both bounds) + `validateQuestionnaire` (minimum only) |
 | `options[].label` | max 60 characters | TypeBox schema only |
 | `options[].preview` | single-select questions only | tool description (multi-select tabs render checkbox rows) |
 
-The two `maxLength` limits are checked by the parameter schema before `execute` runs;
-the runtime validator does not re-check them.
+The `options[].label` length limit is checked by the parameter schema before `execute` runs;
+the runtime validator does not re-check it.
+
+Long headers do not reject the questionnaire. The terminal tab bar replaces line breaks with spaces
+and shortens each displayed header to 16 terminal columns, including `...` when needed.
+This display step does not change the header in questionnaire state or event payloads.
+RPC dialogs continue to receive the full header.
 
 ### Reserved option labels
 

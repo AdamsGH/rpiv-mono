@@ -2,6 +2,8 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
 import type { StatefulView } from "../stateful-view.js";
 
+const MAX_TAB_LABEL_WIDTH = 16;
+
 /**
  * Per-tick projection of TabBar state. The selector
  * (`selectTabBarProps`) hoists every render-time derivation
@@ -35,7 +37,8 @@ export class TabBar implements StatefulView<TabBarProps> {
 
 		for (const tab of this.props.tabs) {
 			const box = tab.answered ? "■" : "□";
-			const rawSeg = ` ${box} ${tab.label} `;
+			const label = truncateToWidth(tab.label.replace(/\r\n?|\n/g, " "), MAX_TAB_LABEL_WIDTH, "...");
+			const rawSeg = ` ${box} ${label} `;
 			const styled = tab.active
 				? this.theme.bg("selectedBg", this.theme.fg("text", rawSeg))
 				: this.theme.fg(tab.answered ? "success" : "muted", rawSeg);

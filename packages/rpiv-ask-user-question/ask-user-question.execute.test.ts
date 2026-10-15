@@ -1,4 +1,5 @@
 import { createMockCtx, createMockPi, mockStdout } from "@juicesharp/rpiv-test-utils";
+import { Value } from "typebox/value";
 import { describe, expect, it, vi } from "vitest";
 import { BEL, registerAskUserQuestionTool } from "./ask-user-question.js";
 import { MAX_QUESTIONS, type QuestionnaireResult } from "./tool/types.js";
@@ -80,6 +81,41 @@ describe("ask_user_question.execute — early returns", () => {
 		expect(r?.details).toMatchObject({ cancelled: true, error: "too_many_questions" });
 		expect(r?.content[0]).toMatchObject({ text: expect.stringContaining("At most") });
 	});
+});
+
+it("accepts a long header through the registered schema and preserves it in the prompt event", async () => {
+	const emit = vi.fn();
+	const { pi, captured } = createMockPi({ events: { emit, on: vi.fn(() => () => {}) } });
+	registerAskUserQuestionTool(pi);
+	const tool = captured.tools.get("ask_user_question")!;
+	const header = "Geographically distributed disaster recovery";
+	const params = {
+		questions: [
+			{
+				question: "Which recovery strategy?",
+				header,
+				options: [
+					{ label: "Standby", description: "Fast recovery" },
+					{ label: "Backups", description: "Lower cost" },
+				],
+			},
+		],
+	};
+	expect(Value.Check(tool.parameters, params)).toBe(true);
+	await tool.execute?.(
+		"long-header",
+		params as never,
+		undefined as never,
+		undefined as never,
+		ctxWithCustom(null) as never,
+	);
+	expect(emit).toHaveBeenCalledWith(
+		"rpiv:ask-user:prompt",
+		expect.objectContaining({
+			questions: [expect.objectContaining({ header })],
+		}),
+	);
+	expect(params.questions[0].header).toBe(header);
 });
 
 describe("ask_user_question.execute — terminal attention", () => {

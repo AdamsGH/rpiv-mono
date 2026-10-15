@@ -4,7 +4,6 @@ import { LABELS_BY_KIND, ROW_INTENT_META } from "../state/row-intent.js";
 export const MAX_QUESTIONS = 4;
 export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 4;
-export const MAX_HEADER_LENGTH = 16;
 export const MAX_LABEL_LENGTH = 60;
 
 /**
@@ -60,8 +59,8 @@ export const QuestionSchema = Type.Object({
 			'The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: "Which library should we use for date formatting?" If multiSelect is true, phrase it accordingly, e.g. "Which features do you want to enable?"',
 	}),
 	header: Type.String({
-		maxLength: MAX_HEADER_LENGTH,
-		description: `MAX ${MAX_HEADER_LENGTH} CHARACTERS — hard limit, requests over the limit are rejected. Very short chip/tag shown next to the question. Examples: "Auth method", "Library", "Approach".`,
+		description:
+			'Short tab label for the question. Long headers are shortened for terminal display only. Examples: "Auth method", "Library", "Approach".',
 	}),
 	options: Type.Array(OptionSchema, {
 		minItems: MIN_OPTIONS,

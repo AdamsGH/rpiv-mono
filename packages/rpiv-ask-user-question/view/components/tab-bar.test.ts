@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { makeTheme } from "@juicesharp/rpiv-test-utils";
@@ -117,6 +118,46 @@ describe("TabBar.render", () => {
 			const lines = tb.render(w);
 			expect(visibleWidth(lines[0])).toBeLessThanOrEqual(w);
 		}
+	});
+
+	it.each(["x".repeat(80), "部署環境".repeat(20), "🛠️".repeat(30)])(
+		"shortens a long header only for display: %s",
+		(header) => {
+			const props = buildProps({
+				questions: [
+					{ header, question: "First?" },
+					{ header: "Second", question: "Next?" },
+				],
+			});
+			const tb = makeBar(props);
+			const line = tb.render(80)[0];
+			expect(line).toContain("Second");
+			expect(line).toContain("Submit");
+			expect(line).not.toContain(header);
+			expect(props.tabs[0].label).toBe(header);
+			expect(visibleWidth(line)).toBeLessThanOrEqual(80);
+		},
+	);
+
+	it("preserves short labels and redraws without changing the source header", () => {
+		const header = "Authentication strategy";
+		const props = buildProps({ questions: [{ header, question: "Which?" }] });
+		const tb = makeBar(props);
+		for (const width of [10, 40, 120, 40]) {
+			expect(visibleWidth(tb.render(width)[0])).toBeLessThanOrEqual(width);
+			expect(props.tabs[0].label).toBe(header);
+		}
+		expect(stripVTControlCharacters(tb.render(80)[0])).toContain("Authenticatio...");
+		expect(makeBar(buildProps()).render(80)[0]).toContain("Priority");
+	});
+
+	it("keeps multiline headers on one terminal line without changing props", () => {
+		const header = "Auth\r\nmethod\nchoice";
+		const props = buildProps({ questions: [{ header, question: "Which?" }] });
+		const line = makeBar(props).render(80)[0];
+		expect(line).not.toMatch(/[\r\n]/);
+		expect(line).toContain("Auth method");
+		expect(props.tabs[0].label).toBe(header);
 	});
 
 	it("setProps replaces props between renders", () => {
